@@ -1,44 +1,12 @@
 import SwiftUI
 import CoreLocation
+import MapKit
 
-struct LocationEntry: Codable {
-    var timestamp: Date
-    var longitude: Double
-    var latitude: Double
-    var altitude: Double
-    var xyacc: Double
-    var zacc: Double
-    var use: String
-}
-struct RunSessionEntry: Codable {
-    var id: String
-    var startedAt: Date
-    var endedAt: Date
-    var locations: [LocationEntry]
-    var checkpoint: [Date]
-    var destination: String
-    
-}
-
-func rgc(from location: CLLocation) async throws -> String {
-    let geocoder = CLGeocoder()
-    let placemarks = try await geocoder.reverseGeocodeLocation(location)
-
-    guard let placemark = placemarks.first else {
-            print("some error")
-            return ""
-        }
-        
-        let streetName = placemark.thoroughfare
-        
-    return "\(streetName?.description)"
-    
-}
 @Observable class RunTracker: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
-    private var Clocations: [LocationEntry] = []
+    var Clocations: [LocationEntryV2] = []
     private var authorization: Bool = false
-    var checkpoint: [Date] = []
+    var checkpoints: [LocationEntryV2] = []
     var isStarted: Bool = false
     var startedAt: Date = Date()
     var whichAction: String = ""
@@ -75,28 +43,32 @@ func rgc(from location: CLLocation) async throws -> String {
     }
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         let last = locations.last!
-        if last.horizontalAccuracy < 4.5 { return }
-        Clocations.append(LocationEntry(timestamp: last.timestamp, longitude: last.coordinate.longitude, latitude: last.coordinate.latitude, altitude: last.altitude, xyacc: last.horizontalAccuracy, zacc: last.verticalAccuracy, use: whichAction))
+       // if last.horizontalAccuracy > 4.5 { return }
+        Clocations.append(CLtoLEV2(last))
     }
     func saveLocal() async {
         guard let g = Clocations.last else {
             print("NPC detected")
             return
-        }
-        let cl = CLLocation(
-            coordinate: CLLocationCoordinate2D(latitude: g.latitude, longitude: g.longitude),
-            altitude: g.altitude,
-            horizontalAccuracy: g.xyacc,
-            verticalAccuracy: g.zacc,
-            timestamp: g.timestamp
-        )
+        } // REHANDLE THE THROW**@moderate
         do {
-            let dest = try await rgc(from: cl)
-            let rs = RunSessionEntry(id: generateRandomId(15), startedAt: startedAt, endedAt: Date(), locations: Clocations, checkpoint: checkpoint, destination: dest)
+            let res = try await reverseGeocode(LEV2toCL(g))
+            var dest = ""
+            if !res.sucessful {
+                // throw some erorr
+                print("some error")
+            }
+            dest = (res.data as! MKMapItem).address!.fullAddress
+            var dist: Double = 0
+            for i in 0..<Clocations.count-1 {
+                dist += distfn(Clocations[i], Clocations[i+1])
+            }
+            // HANDLE THROW IF LENGTH < SOME SPECIFIC*@moderate
+            let rs = RunSessionEntryV2(start: startedAt, end: Date(), coordinates: Clocations, checkpoints: checkpoints, destination: dest, distance: dist, displacement: distfn(Clocations.first!, Clocations.last!))
             print("initials")
-            var result: [RunSessionEntry] = []
+            var result: [RunSessionEntryV2] = []
             if let d = UserDefaults.standard.data(forKey: "runs") {
-                if let decoded = try? JSONDecoder().decode([RunSessionEntry].self, from: d) {
+                if let decoded = try? JSONDecoder().decode([RunSessionEntryV2].self, from: d) {
                     result = decoded
                 }
             }
@@ -108,6 +80,7 @@ func rgc(from location: CLLocation) async throws -> String {
                 }
             isStarted = false
             stopRecording()
+            print("i did arrive at savings")
         } catch {
             print("some err occured")
         }
