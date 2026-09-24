@@ -1,30 +1,26 @@
 import SwiftUI
 import CoreLocation
+import MapKit
 
 struct ContentView: View {
     var rt = RunTracker()
     @State private var isSheetOpen: Bool = true
-  //  @State private var isStartingSession: Bool = false
     @State private var userState: UserStates = .home
-    @State private var whichAction: String = ""
     @State private var whichId: String = ""
-    @State private var iss2: Bool = true
     @State private var sheetState: SheetStates = .home
     @State private var prev_runs: [RunSessionEntryV2] = []
-    //@State private var someData: RunSessionEntryV2? = nil
-    
+    @State private var camera: MapCameraPosition = .automatic
     
     var body: some View {
         ZStack {
-            switch (userState) {
-            case .home:
-                HomeView(rt: rt, userState: $userState, ss: $sheetState, iss2: $iss2)
-            case .inrunsession:
-                RunSessionView(rt: rt, userState: $userState)
-            case .history:
-                HistoryView(rt: rt, userState: $userState, ss: $sheetState, iss2: $iss2)
-            case .historicalsession(let someid):
-                HistoricalSessionView(someid: someid, userState: $userState)
+            Map(position: $camera) {
+                if rt.Clocations.count > 1 {
+                    MapPolyline(coordinates: convert(rt.Clocations), contourStyle: .geodesic).stroke(.blue, lineWidth: 5)
+                }
+                UserAnnotation()
+            }.mapControls {
+                MapScaleView()
+                MapUserLocationButton()
             }
         }.onAppear {
             if let d = UserDefaults.standard.data(forKey: "runs"), let decoded = try? JSONDecoder().decode([RunSessionEntryV2].self, from: d) {
@@ -33,7 +29,7 @@ struct ContentView: View {
         }.sheet(isPresented: $isSheetOpen) {
             switch sheetState {
             case .home:
-               ZStack(alignment: .center) {
+                ZStack(alignment: .top) {
                    HStack {
                        Spacer()
                        Button(action: { sheetState = .isstartingsession }) {
@@ -49,7 +45,7 @@ struct ContentView: View {
                    //                Rectangle().fill(Color.black).frame(maxWidth: .infinity, maxHeight: 1)
                }.frame(maxWidth: .infinity, maxHeight: .infinity).padding(8).presentationDetents([.fraction(0.08), .medium]).presentationBackgroundInteraction(.enabled)
             case .inrunsession:
-                ZStack(alignment: .center) {
+                ZStack(alignment: .top) {
                     VStack {
                         Button(action: {
                             print("did reg. click")
@@ -76,7 +72,7 @@ struct ContentView: View {
                     //                Rectangle().fill(Color.black).frame(maxWidth: .infinity, maxHeight: 1)
                 }.frame(maxWidth: .infinity, maxHeight: .infinity).padding(8).presentationDetents([.fraction(0.08), .medium]).presentationBackgroundInteraction(.enabled)
             case .history:
-                ZStack(alignment: .center) {
+                ZStack(alignment: .top) {
                     VStack {
                         ForEach(prev_runs, id: \.id) { run in
                             Button(action: {
@@ -92,7 +88,7 @@ struct ContentView: View {
                 }.frame(maxWidth: .infinity, maxHeight: .infinity).padding(8).presentationDetents([.fraction(0.08), .medium]).presentationBackgroundInteraction(.enabled)
             case .historicalsession:
                 let someData: RunSessionEntryV2? = prev_runs.first { $0.id == whichId }
-                ZStack {
+                ZStack(alignment: .top) {
                     VStack {
                         HStack {
                             Button(action: { userState = .home }) {
@@ -120,41 +116,68 @@ struct ContentView: View {
                     }
                 }.frame(maxWidth: .infinity, maxHeight: .infinity).padding(8).presentationDetents([.fraction(0.08), .medium]).presentationBackgroundInteraction(.enabled)
             case .isstartingsession:
-                ZStack(alignment: .top) {
-                    VStack(spacing: 8) {
-                               HStack {
-                                   Button(action: {sheetState = .home}) {
-                                       Image(systemName: "xmark")
-                                   }
-                                   Spacer()
-                                   VStack {
-                                       Text("New Session").font(.title).foregroundStyle(Color.black)
-                                       Text("Start a new session").font(.caption2).foregroundStyle(Color.gray.opacity(0.5))
-                                   }
-                                   Spacer()
-                                   Button(action: {}) {
-                                       Image(systemName: "checkmark")
-                                   }
-                               }
-                               Button(action: {
-                                   print("should start send")
-                                   rt.start()
-                                   print("should complete send")
-                                   sheetState = .inrunsession
-                                   userState = .inrunsession
-                               }) {
-                                   Text("Run Session")
-                                   Spacer()
-                                   Image(systemName: "arrow.right")
-                               }.frame(maxHeight: .infinity).padding().background(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 1))
-                               
-                               Button(action: {}) {
-                                   Text("W I P")
-                                   Spacer()
-                                   Image(systemName: "arrow.right")
-                               }.frame(maxHeight: .infinity).padding().background(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 1))
-                    }.padding(.top, 12).padding(.horizontal, 24)
-                }.frame(maxWidth: .infinity, maxHeight: .infinity).padding(8).presentationDetents([.fraction(0.08), .medium]).presentationBackgroundInteraction(.enabled)
+                VStack(spacing: 0) {
+                    HStack {
+                        Button(action: { sheetState = .home }) {
+                            Image(systemName: "xmark")
+                        }
+                        Spacer()
+                        VStack {
+                            Text("New Session").font(.title).foregroundStyle(Color.black)
+                            Text("Start a new session").font(.caption2).foregroundStyle(Color.gray.opacity(0.5))
+                        }
+                        Spacer()
+                        Button(action: {}) {
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 60)
+                    .background(Color(.systemBackground))
+                    .zIndex(1)
+
+                    ScrollView {
+                        VStack(spacing: 8) {
+                            Button(action: {
+                                print("should start send")
+                                rt.start()
+                                print("should complete send")
+                                sheetState = .inrunsession
+                                userState = .inrunsession
+                            }) {
+                                Text("Run Session")
+                                Spacer()
+                                Image(systemName: "arrow.right")
+                            }
+                            .padding(16)
+                            .frame(maxWidth: .infinity, idealHeight: 100)
+                            .background(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 1))
+                            Button(action: {
+                                print("should start send")
+                                rt.start()
+                                print("should complete send")
+                                sheetState = .inrunsession
+                                userState = .inrunsession
+                            }) {
+                                Text("W I P")
+                                Spacer()
+                                Image(systemName: "arrow.right")
+                            }
+                            .padding(16)
+                            .frame(maxWidth: .infinity, idealHeight: 100)
+                            .background(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 1))
+                        }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .top)
+                    }
+                    .frame(maxHeight: .infinity, alignment: .top)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .padding(8)
+                .presentationDetents([.height(80), .medium])
+                .presentationBackgroundInteraction(.enabled)
+                .presentationDragIndicator(.visible)
             }
         }
         }
