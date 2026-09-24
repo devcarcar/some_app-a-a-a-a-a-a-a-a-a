@@ -5,7 +5,6 @@ import MapKit
 struct ContentView: View {
     var rt = RunTracker()
     @State private var isSheetOpen: Bool = true
-    @State private var userState: UserStates = .home
     @State private var whichId: String = ""
     @State private var sheetState: SheetStates = .home
     @State private var prev_runs: [RunSessionEntryV2] = []
@@ -23,33 +22,21 @@ struct ContentView: View {
                 MapUserLocationButton()
             }
         }.onAppear {
+//            UserDefaults.standard.removeObject(forKey: "runs")
+//            UserDefaults.standard.removeObject(forKey: "run_models")
             if let d = UserDefaults.standard.data(forKey: "runs"), let decoded = try? JSONDecoder().decode([RunSessionEntryV2].self, from: d) {
                 prev_runs = decoded
             }
         }.sheet(isPresented: $isSheetOpen) {
             switch sheetState {
             case .home:
-                ZStack(alignment: .top) {
-                   HStack {
-                       Spacer()
-                       Button(action: { sheetState = .isstartingsession }) {
-                           Image(systemName: "plus.circle.fill").font(.system(size: 36))
-                       }
-                       Button(action: {
-                           userState = .history
-                           sheetState = .history
-                       }) {
-                           Image(systemName: "arrow.clockwise.circle.fill").font(.system(size: 36))
-                       }
-                   }.frame(maxWidth: .infinity)
-                   //                Rectangle().fill(Color.black).frame(maxWidth: .infinity, maxHeight: 1)
-               }.frame(maxWidth: .infinity, maxHeight: .infinity).padding(8).presentationDetents([.fraction(0.08), .medium]).presentationBackgroundInteraction(.enabled)
+                HomeView(rt: rt, sheetState: $sheetState, pr: $prev_runs, wid: $whichId)
             case .inrunsession:
                 ZStack(alignment: .top) {
                     VStack {
                         Button(action: {
                             print("did reg. click")
-                          //  print(rt.Clocations.description) // crash testing
+                            //  print(rt.Clocations.description) // crash testing
                             if rt.Clocations.last != nil {
                                 rt.checkpoints.append(rt.Clocations.last!)
                             } // HANDLE THIS THROW ERROR**@urgent
@@ -60,7 +47,6 @@ struct ContentView: View {
                         Button(action: {
                             Task {
                                 await rt.saveLocal()
-                                userState = .home
                                 sheetState = .home
                                 
                             }
@@ -76,7 +62,6 @@ struct ContentView: View {
                     VStack {
                         ForEach(prev_runs, id: \.id) { run in
                             Button(action: {
-                                userState = .historicalsession(id: run.id)
                                 sheetState = .historicalsession
                                 whichId = run.id
                             }) {
@@ -91,7 +76,7 @@ struct ContentView: View {
                 ZStack(alignment: .top) {
                     VStack {
                         HStack {
-                            Button(action: { userState = .home }) {
+                            Button(action: { sheetState = .home }) {
                                 Image(systemName: "arrow.left")
                             }
                             Spacer()
@@ -116,70 +101,9 @@ struct ContentView: View {
                     }
                 }.frame(maxWidth: .infinity, maxHeight: .infinity).padding(8).presentationDetents([.fraction(0.08), .medium]).presentationBackgroundInteraction(.enabled)
             case .isstartingsession:
-                VStack(spacing: 0) {
-                    HStack {
-                        Button(action: { sheetState = .home }) {
-                            Image(systemName: "xmark")
-                        }
-                        Spacer()
-                        VStack {
-                            Text("New Session").font(.title).foregroundStyle(Color.black)
-                            Text("Start a new session").font(.caption2).foregroundStyle(Color.gray.opacity(0.5))
-                        }
-                        Spacer()
-                        Button(action: {}) {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 60)
-                    .background(Color(.systemBackground))
-                    .zIndex(1)
-
-                    ScrollView {
-                        VStack(spacing: 8) {
-                            Button(action: {
-                                print("should start send")
-                                rt.start()
-                                print("should complete send")
-                                sheetState = .inrunsession
-                                userState = .inrunsession
-                            }) {
-                                Text("Run Session")
-                                Spacer()
-                                Image(systemName: "arrow.right")
-                            }
-                            .padding(16)
-                            .frame(maxWidth: .infinity, idealHeight: 100)
-                            .background(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 1))
-                            Button(action: {
-                                print("should start send")
-                                rt.start()
-                                print("should complete send")
-                                sheetState = .inrunsession
-                                userState = .inrunsession
-                            }) {
-                                Text("W I P")
-                                Spacer()
-                                Image(systemName: "arrow.right")
-                            }
-                            .padding(16)
-                            .frame(maxWidth: .infinity, idealHeight: 100)
-                            .background(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 1))
-                        }
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .top)
-                    }
-                    .frame(maxHeight: .infinity, alignment: .top)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .padding(8)
-                .presentationDetents([.height(80), .medium])
-                .presentationBackgroundInteraction(.enabled)
-                .presentationDragIndicator(.visible)
+                IsStartingSessionView(rt: rt, sheetState: $sheetState)
             }
-        }
+            }
         }
     
 }

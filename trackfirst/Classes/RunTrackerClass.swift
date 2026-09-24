@@ -58,7 +58,8 @@ import MapKit
                 // throw some erorr
                 print("some error")
             }
-            dest = (res.data as! MKMapItem).address!.fullAddress
+            dest = (res.data as! MKMapItem).name!
+            print("dest:_\(dest)_")
             var dist: Double = 0
             for i in 0..<Clocations.count-1 {
                 dist += distfn(Clocations[i], Clocations[i+1])
