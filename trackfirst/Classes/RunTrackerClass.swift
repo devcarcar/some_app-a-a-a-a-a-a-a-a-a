@@ -10,6 +10,7 @@ import MapKit
     var isStarted: Bool = false
     var startedAt: Date = Date()
     var whichAction: String = ""
+    var wasTriggered: Bool = false
     
     override init() {
         super.init()
@@ -24,10 +25,20 @@ import MapKit
     
     func start() {
        // UserDefaults.standard.removeObject(forKey: "locations") // DELETE THIS LINE*
-        manager.requestWhenInUseAuthorization()
+        switch manager.authorizationStatus {
+        case .authorizedAlways:
+            authorization = true
+            manager.startUpdatingLocation()
+            isStarted = true
+            startedAt = Date()
+            wasTriggered = true
+        default:
+            manager.requestWhenInUseAuthorization()
+        }
     }
     
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        guard wasTriggered else { return }
         switch status {
         case .authorizedAlways:
            authorization = true

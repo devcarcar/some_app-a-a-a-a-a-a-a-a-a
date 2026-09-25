@@ -3,7 +3,6 @@ import SwiftUI
 enum SheetStates {
     case home
     case inrunsession
-    case history
     case historicalsession
     case isstartingsession
 }

@@ -13,7 +13,6 @@ struct HomeView: View {
                     Image(systemName: "plus.circle.fill").font(.system(size: 36))
                 }
                 Button(action: {
-                    sheetState = .history
                 }) {
                     Image(systemName: "arrow.clockwise.circle.fill").font(.system(size: 36))
                 }
@@ -38,7 +37,7 @@ struct HomeView: View {
                             }) {
                                 HStack {
                                     VStack(alignment: .leading) {
-                                        Text(r.destination).fontWeight(.semibold)
+                                        Text(r.destination).background(Color.black).fontWeight(.semibold)
                                         Text("Ended at \(r.end.formatted(.dateTime.year().month().day().hour().minute().second()))")
                                     }
                                     Spacer()
