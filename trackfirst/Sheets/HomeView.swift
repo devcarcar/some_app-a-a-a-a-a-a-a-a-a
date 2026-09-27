@@ -12,14 +12,9 @@ struct HomeView: View {
                 Button(action: { sheetState = .isstartingsession }) {
                     Image(systemName: "plus.circle.fill").font(.system(size: 36))
                 }
-                Button(action: {
-                }) {
-                    Image(systemName: "arrow.clockwise.circle.fill").font(.system(size: 36))
-                }
             }.padding(.vertical, 8)
                 .frame(maxWidth: .infinity)
                 .frame(height: 60)
-                .background(Color(.systemBackground))
                 .zIndex(1)
             
             ScrollView {

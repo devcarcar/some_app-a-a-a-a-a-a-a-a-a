@@ -22,7 +22,6 @@ struct IsStartingSessionView: View {
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity)
             .frame(height: 60)
-            .background(Color(.systemBackground))
             .zIndex(1)
 
             ScrollView {

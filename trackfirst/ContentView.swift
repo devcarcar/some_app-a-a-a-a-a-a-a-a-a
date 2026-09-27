@@ -14,7 +14,7 @@ struct ContentView: View {
     @State private var elapsed: Double = 0
     @State private var displayRatio: Double = 1
     
-    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    let timer = Timer.publish(every: 1 / 60, on: .main, in: .common).autoconnect()
     
     var body: some View {
         ZStack {
@@ -24,14 +24,14 @@ struct ContentView: View {
                 }
                 if isReplaying {
                     if let k = prev_runs.first { $0.id == whichId }?.coordinates {
-                        let g = k.filter { elapsed * displayRatio > ($0.timestamp.timeIntervalSince1970 - k.first!.timestamp.timeIntervalSince1970) }
+                        let g = k.filter { elapsed > ($0.timestamp.timeIntervalSince1970 - k.first!.timestamp.timeIntervalSince1970) }
                         if convert(g).count > 1 {
                             MapPolyline(coordinates: convert(g), contourStyle: .geodesic).stroke(.red, lineWidth: 5)
                         }
                     }
                 }
                 if sheetState == .historicalsession && whichId != "" && isReplaying == false {
-                    MapPolyline(coordinates: convert(prev_runs.first { $0.id == whichId }!.coordinates), contourStyle: .geodesic).stroke(.blue, lineWidth: 5)
+                    MapPolyline(coordinates: convert(prev_runs.first { $0.id == whichId }!.coordinates), contourStyle: .geodesic).stroke(.red, lineWidth: 5)
                 }
                 UserAnnotation()
             }.mapControls {
@@ -40,7 +40,14 @@ struct ContentView: View {
             }
         }.onReceive(timer) { _ in
             if isReplaying {
-                elapsed += 1
+               // print("some el: \(elapsed)")
+                elapsed += displayRatio / 60
+                if let k = prev_runs.first { $0.id == whichId }?.coordinates {
+                    if k.count < 2 { return }
+                    if elapsed >= (k.last!.timestamp.timeIntervalSince1970 - k.first!.timestamp.timeIntervalSince1970) {
+                        isReplaying = false
+                    }
+                        }
             }
         }.onAppear {
 //            UserDefaults.standard.removeObject(forKey: "runs")

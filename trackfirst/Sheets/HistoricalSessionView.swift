@@ -12,54 +12,56 @@ struct HistoricalSessionView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button(action: { sheetState = .home }) {
-                    Image(systemName: "xmark")
+                Button(action: {
+                    ir = false
+                    sheetState = .home
+                }) {
+                    Image(systemName: "arrow.left")
                 }
                 Spacer()
                 VStack {
-                    Text("New Session").font(.title).foregroundStyle(Color.black)
-                    Text("Start a new session").font(.caption2).foregroundStyle(Color.gray.opacity(0.5))
+                    Text("Session, ended \(someData?.end.formatted(.dateTime.year().month().day().hour().minute().second()) ?? "Unavailable")")
                 }
                 Spacer()
+                Button(action: { if someData != nil {
+                    let res = appendRunSessionModel(makeModel(someData!))
+                    if res.sucessful == false {
+                        print(someData)
+                        print("SOME SEP")
+                        print(makeModel(someData!))
+                        print("some sep")
+                        print("Some error when trying to save someData")
+                    }
+                } }) {
+                    Image(systemName: "square.and.arrow.down")
+                }
                 Button(action: {
-                    ir = true
+                    ir.toggle()
                     el = 0
                     print("i did click")
                 }) {
-                    Image(systemName: "play")
+                    if ir == true {
+                        Image(systemName: "play")
+                    } else {
+                        Image(systemName: "play.fill")
+                    }
                 }
             }
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity)
             .frame(height: 60)
-            .background(Color(.systemBackground))
             .zIndex(1)
 
             ScrollView {
                 VStack {
-                    HStack {
-                        Button(action: { sheetState = .home }) {
-                            Image(systemName: "arrow.left")
-                        }
-                        Spacer()
-                        Text("Session, ended \(someData?.end.formatted(.dateTime.year().month().day().hour().minute().second()) ?? "Unavailable")")
-                        Spacer()
-                        Button(action: { if someData != nil {
-                            let res = appendRunSessionModel(makeModel(someData!))
-                            if !res.sucessful {
-                                print(someData)
-                                print("SOME SEP")
-                                print(makeModel(someData!))
-                                print("some sep")
-                                print("Some error when trying to save someData")
-                            }
-                        } }) {
-                            Image(systemName: "square.and.arrow.down")
-                        }
-                    }
-                    VStack(spacing: 4) {
+                    //
+                    VStack(alignment: .leading, spacing: 4) {
                         Text(someData?.destination ?? "Unavailable")
-                    }
+                        HStack {
+                            Text("Some scale: \(dr)")
+                            Slider(value: $dr, in: 1...60)
+                        }
+                    }.frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 .padding(12)
