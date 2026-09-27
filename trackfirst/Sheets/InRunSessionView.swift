@@ -6,18 +6,29 @@ struct InRunSessionView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button(action: { sheetState = .home }) {
-                    Image(systemName: "xmark")
+                Button(action: {
+                    Task {
+                        await rt.saveLocal()
+                        sheetState = .home
+                    }
+                }) {
+                    Image(systemName: "xmark.circle.fill")
                 }
                 Spacer()
                 VStack {
-                    Text("New Session").font(.title).foregroundStyle(Color.black)
-                    Text("Start a new session").font(.caption2).foregroundStyle(Color.gray.opacity(0.5))
+                    Text("In Run Session").font(.title).foregroundStyle(Color.black)
                 }
                 Spacer()
-                Button(action: {}) {
-                    Image(systemName: "checkmark")
-                }
+                Button(action: {
+                    if rt.Clocations.last != nil {
+                        rt.checkpoints.append(rt.Clocations.last!)
+                    }
+                }) {
+                    Image(systemName: "flag.fill").font(.system(size: 18)).foregroundStyle(Color.blue)
+                }.background(Circle().fill(Color.blue.opacity(0.3)).frame(width: 32, height: 32)).overlay(alignment: .topTrailing) {
+                    Text(rt.checkpoints.count.description).font(.caption2).padding(4).foregroundStyle(Color.white).background(Circle().fill(Color.red)).offset(x: 12, y: -12)
+                }.frame(width: 40, height: 40)
+
             }
             .padding(.vertical, 8)
             .frame(maxWidth: .infinity)
@@ -26,37 +37,24 @@ struct InRunSessionView: View {
             .zIndex(1)
 
             ScrollView {
-                VStack {
-                    Button(action: {
-                        print("did reg. click")
-                        //  print(rt.Clocations.description) // crash testing
-                        if rt.Clocations.last != nil {
-                            rt.checkpoints.append(rt.Clocations.last!)
-                        } // HANDLE THIS THROW ERROR**@urgent
-                    }) {
-                        Text("Checkpoint")
+                VStack(alignment: .leading) {
+                    HStack(spacing: 4) {
+                        Text("View Details").font(.system(.title3)).fontWeight(.semibold)
+                        Spacer()
                     }
-                    Text("Checkpoints: \(rt.checkpoints.count)")
-                    Button(action: {
-                        Task {
-                            await rt.saveLocal()
-                            sheetState = .home
-                            
-                        }
-                    }) {
-                        Text("End this session")
-                    }
-                    Text("Started at \(rt.startedAt.formatted())")
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Session started at \(rt.startedAt.formatted(.dateTime.year().month().day().hour().minute().second()))")
+                            Text("Distance travelled: \(rt.distance)m")
+                            Text("Points registered: \(rt.Clocations.count)")
+                        }.frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .top)
             }
-            .frame(maxHeight: .infinity, alignment: .top)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .padding(8)
         .presentationDetents([.height(80), .medium])
         .presentationBackgroundInteraction(.enabled)
         .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled()
     }
 }

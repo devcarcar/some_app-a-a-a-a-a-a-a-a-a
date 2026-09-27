@@ -40,13 +40,8 @@ struct IsStartingSessionView: View {
                     .padding(16)
                     .frame(maxWidth: .infinity, idealHeight: 100)
                     .background(RoundedRectangle(cornerRadius: 16).stroke(Color.gray.opacity(0.2), lineWidth: 1))
-                    Button(action: {
-                        print("should start send")
-                        rt.start()
-                        print("should complete send")
-                        sheetState = .inrunsession
-                    }) {
-                        Text("W I P")
+                    Button(action: {}) {
+                        Text("Beacon")
                         Spacer()
                         Image(systemName: "arrow.right")
                     }
@@ -64,5 +59,6 @@ struct IsStartingSessionView: View {
         .presentationDetents([.height(80), .medium])
         .presentationBackgroundInteraction(.enabled)
         .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled()
     }
 }

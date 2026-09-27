@@ -11,6 +11,7 @@ import MapKit
     var startedAt: Date = Date()
     var whichAction: String = ""
     var wasTriggered: Bool = false
+    var distance: Double = 0
     
     override init() {
         super.init()
@@ -55,6 +56,9 @@ import MapKit
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         let last = locations.last!
        // if last.horizontalAccuracy > 4.5 { return }
+        if Clocations.count > 0 {
+            distance += distfn(CLtoLEV2(last), Clocations.last!)
+        }
         Clocations.append(CLtoLEV2(last))
     }
     func saveLocal() async {

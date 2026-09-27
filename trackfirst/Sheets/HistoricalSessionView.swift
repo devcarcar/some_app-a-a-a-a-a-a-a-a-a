@@ -5,6 +5,9 @@ struct HistoricalSessionView: View {
     @Binding var sheetState: SheetStates
     @Binding var wid: String
     @Binding var prev_runs: [RunSessionEntryV2]
+    @Binding var ir: Bool
+    @Binding var el: Double
+    @Binding var dr: Double
     @State private var someData: RunSessionEntryV2?
     var body: some View {
         VStack(spacing: 0) {
@@ -18,8 +21,12 @@ struct HistoricalSessionView: View {
                     Text("Start a new session").font(.caption2).foregroundStyle(Color.gray.opacity(0.5))
                 }
                 Spacer()
-                Button(action: {}) {
-                    Image(systemName: "checkmark")
+                Button(action: {
+                    ir = true
+                    el = 0
+                    print("i did click")
+                }) {
+                    Image(systemName: "play")
                 }
             }
             .padding(.vertical, 8)
@@ -65,6 +72,7 @@ struct HistoricalSessionView: View {
         .presentationDetents([.height(80), .medium])
         .presentationBackgroundInteraction(.enabled)
         .presentationDragIndicator(.visible)
+        .interactiveDismissDisabled()
         .onAppear {
             someData = prev_runs.first { $0.id == wid }
         }
